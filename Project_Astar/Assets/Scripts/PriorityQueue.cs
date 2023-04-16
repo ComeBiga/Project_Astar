@@ -34,10 +34,8 @@ public class PriorityQueue<TElement> where TElement : class
     public void Enqueue(TElement element, int priority)
     {
         var newNode = new Node(element, priority);
-
         list.Add(newNode);
 
-        //SortAsHeap();
         int pos = list.Count;
 
         while (pos > 1)

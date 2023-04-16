@@ -17,6 +17,7 @@ public class GroundTile : MonoBehaviour
     public Material[] tileColorMaterials;
     public Vector2Int Location => mlocation;
     public EType Type => mType;
+    public GroundTile PreviousTile => mPreviousTile;
 
     [HideInInspector]
     public int costSoFar = 0;
@@ -33,6 +34,24 @@ public class GroundTile : MonoBehaviour
 
     private MeshRenderer mMeshRenderer;
     private int mTileColorIndex = 0;
+
+    public void Init(Vector2Int location, EType type = EType.Ground)
+    {
+        InitLocation(location);
+        Reset();
+    }
+
+    public void Reset()
+    {
+        Set(EType.Ground);
+
+        costSoFar = 0;
+        heuristic = 0;
+        mPreviousTile = null;
+
+        isOpened = false;
+        isGoal = false;
+    }
 
     public void InitLocation(Vector2Int location)
     {
