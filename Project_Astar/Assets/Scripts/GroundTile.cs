@@ -27,11 +27,12 @@ public class GroundTile : MonoBehaviour
     public Vector2Int Location => mlocation;
     public EType Type => mType;
     public GroundTile PreviousTile => mPreviousTile;
+    public bool IsGround => mType == EType.Ground;
 
     [HideInInspector]
     public int costSoFar = 0;
     [HideInInspector]
-    public int heuristic = 0;
+    public float heuristic = 0f;
     [HideInInspector]
     public bool isOpened = false;
 
@@ -44,13 +45,15 @@ public class GroundTile : MonoBehaviour
 
     public void Init(Vector2Int location, EType type = EType.Ground)
     {
+        Set(EType.Ground);
+
         InitLocation(location);
         Reset();
     }
 
     public void Reset()
     {
-        Set(EType.Ground);
+        Set(mType);
 
         costSoFar = 0;
         heuristic = 0;
@@ -77,19 +80,20 @@ public class GroundTile : MonoBehaviour
         isOpened = true;
         mPreviousTile = previousTile;
 
-        if(mType != EType.Start && mType != EType.Goal && mType != EType.Wall)
+        if(IsGround)
             SetColor(EType.Opened);
     }
 
     public void Close()
     {
-        if(mType != EType.Start && mType != EType.Goal && mType != EType.Wall)
+        if(IsGround)
             SetColor(EType.Closed);
     }
 
     public void Select()
     {
-        if (mType != EType.Start && mType != EType.Goal && mType != EType.Wall)
+        //if (mType != EType.Start && mType != EType.Goal && mType != EType.Wall)
+        if(IsGround)
             SetColor(EType.Selected);
     }
 

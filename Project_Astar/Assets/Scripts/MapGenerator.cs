@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using UnityEditor;
 using UnityEngine;
+using static GroundTile;
 
 public class MapGenerator : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class MapGenerator : MonoBehaviour
     public int height;
     public Vector2Int startLocation;
     public Vector2Int goalLocation;
+    public float heuristicAdjust = .001f;
     public float findPathInterval = .5f;
     public bool stepByStepMode = false;
     public bool waitAtAwake = false;
@@ -32,9 +34,16 @@ public class MapGenerator : MonoBehaviour
     {
         InstantiateGroundTiles(width, height);
 
+        openedTilePriorityQueue = new PriorityQueue<GroundTile>(width * height);
+
+        InitInput();
+    }
+
+    private void InitInput()
+    {
         InputManager.Instance.onMouseLeftButtonDown += (screenCenterPos, rayCastHit) =>
         {
-            if(rayCastHit.transform == null)
+            if (rayCastHit.transform == null)
                 return;
 
             var targetGroundTile = rayCastHit.transform.GetComponent<GroundTile>();
@@ -59,35 +68,31 @@ public class MapGenerator : MonoBehaviour
 
             bPaintMode = true;
         });
-        
+
         InputManager.Instance.OnKeyDown(KeyCode.P, () =>
         {
             bPaintMode = !bPaintMode;
         });
-        
+
         InputManager.Instance.OnKeyDown(KeyCode.Space, () =>
         {
-            if(mStartTile == null || mGoalTile == null)
+            if (mStartTile == null || mGoalTile == null)
                 return;
 
+            bPaintMode = false;
+
             if (stepByStepMode)
-            {
                 StartCoroutine(FindPathStepByStep());
-            }
             else
-            {
                 StartCoroutine(FindPath());
-            }
         });
     }
 
     private IEnumerator FindPath()
     {
-        bPaintMode = false;
-        openedTilePriorityQueue = new PriorityQueue<GroundTile>(width * height);
+        openedTilePriorityQueue.Clear();
 
         GroundTile currentTile = mStartTile;
-
         currentTile.Open(null);
         OpenTiles(currentTile);
 
@@ -110,11 +115,9 @@ public class MapGenerator : MonoBehaviour
 
     private IEnumerator FindPathStepByStep()
     {
-        bPaintMode = false;
-        openedTilePriorityQueue = new PriorityQueue<GroundTile>(width * height);
+        openedTilePriorityQueue.Clear();
 
         GroundTile currentTile = mStartTile;
-
         currentTile.Open(null);
         OpenTiles(currentTile);
 
@@ -176,7 +179,7 @@ public class MapGenerator : MonoBehaviour
         targetTile.costSoFar = previousTile.costSoFar + GetTileCost(targetTile.Type);
         targetTile.heuristic = GetHeuristic(mGoalTile, targetTile);
 
-        int priority = targetTile.costSoFar + targetTile.heuristic;
+        float priority = targetTile.costSoFar + targetTile.heuristic;
         openedTilePriorityQueue.Enqueue(targetTile, priority);
     }
 
@@ -191,9 +194,11 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    private int GetHeuristic(GroundTile goal, GroundTile target)
-    {  
-        return Mathf.Abs(goal.Location.x - target.Location.x) + Mathf.Abs(goal.Location.y - target.Location.y);
+    private float GetHeuristic(GroundTile goal, GroundTile target)
+    {
+        int h = Mathf.Abs(goal.Location.x - target.Location.x) + Mathf.Abs(goal.Location.y - target.Location.y);
+
+        return h * (1f + heuristicAdjust);
     }
 
     private void DrawPath(GroundTile goalTile)

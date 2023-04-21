@@ -1,16 +1,19 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class PriorityQueue<TElement> where TElement : class 
+public class PriorityQueue<TElement>
+    where TElement : class
+    //where TPriority : IConvertible
 {
     private class Node
     {
         public TElement data;
-        public int priority = 0;
+        public float priority;
 
-        public Node(TElement data, int priority)
+        public Node(TElement data, float priority)
         {
             this.data = data;
             this.priority = priority;
@@ -31,7 +34,12 @@ public class PriorityQueue<TElement> where TElement : class
         list = new List<Node>(capacity);
     }
 
-    public void Enqueue(TElement element, int priority)
+    public void Clear()
+    {
+        list.Clear();
+    }
+
+    public void Enqueue(TElement element, float priority)
     {
         var newNode = new Node(element, priority);
         list.Add(newNode);
