@@ -8,13 +8,22 @@ public class GroundTile : MonoBehaviour
     {
         Ground = 0,
         Wall = 1,
+        Selected = 97,
         Closed = 98,
         Opened = 99,
         Start = 100,
         Goal = 101
     }
 
-    public Material[] tileColorMaterials;
+    [Header("ColorMaterials")]
+    public Material matGround;
+    public Material matWall;
+    public Material matSelected;
+    public Material matClosed;
+    public Material matOpened;
+    public Material matStart;
+    public Material matGoal;
+
     public Vector2Int Location => mlocation;
     public EType Type => mType;
     public GroundTile PreviousTile => mPreviousTile;
@@ -25,15 +34,13 @@ public class GroundTile : MonoBehaviour
     public int heuristic = 0;
     [HideInInspector]
     public bool isOpened = false;
-    [HideInInspector]
-    public bool isGoal = false;
 
     private Vector2Int mlocation;
     private EType mType;
     private GroundTile mPreviousTile;
 
     private MeshRenderer mMeshRenderer;
-    private int mTileColorIndex = 0;
+    //private int mTileColorIndex = 0;
 
     public void Init(Vector2Int location, EType type = EType.Ground)
     {
@@ -50,7 +57,6 @@ public class GroundTile : MonoBehaviour
         mPreviousTile = null;
 
         isOpened = false;
-        isGoal = false;
     }
 
     public void InitLocation(Vector2Int location)
@@ -81,27 +87,36 @@ public class GroundTile : MonoBehaviour
             SetColor(EType.Closed);
     }
 
+    public void Select()
+    {
+        if (mType != EType.Start && mType != EType.Goal && mType != EType.Wall)
+            SetColor(EType.Selected);
+    }
+
     public void SetColor(EType type)
     {
         switch(type)
         {
             case EType.Ground:
-                mMeshRenderer.material = tileColorMaterials[0];
+                mMeshRenderer.material = matGround;
                 break;
             case EType.Wall:
-                mMeshRenderer.material = tileColorMaterials[1];
+                mMeshRenderer.material = matWall;
+                break;
+            case EType.Selected:
+                mMeshRenderer.material = matSelected;
                 break;
             case EType.Closed:
-                mMeshRenderer.material = tileColorMaterials[2];
+                mMeshRenderer.material = matClosed;
                 break;
             case EType.Opened:
-                mMeshRenderer.material = tileColorMaterials[3];
+                mMeshRenderer.material = matOpened;
                 break;
             case EType.Start:
-                mMeshRenderer.material = tileColorMaterials[4];
+                mMeshRenderer.material = matStart;
                 break;
             case EType.Goal:
-                mMeshRenderer.material = tileColorMaterials[5];
+                mMeshRenderer.material = matGoal;
                 break;
             default:
                 UnityEngine.Assertions.Assert.IsTrue(false);

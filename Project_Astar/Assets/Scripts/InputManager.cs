@@ -8,7 +8,7 @@ public class InputManager : MonoBehaviour
     private static InputManager instance = null;
     public static InputManager Instance => instance;
 
-    public event Action<Vector2, RaycastHit> onMouseButtonDown;
+    public event Action<Vector2, RaycastHit> onMouseLeftButtonDown;
 
     public event Action<Vector2, RaycastHit> onMouseMiddleButton;
     public event Action<Vector2, RaycastHit> onMouseMiddleButtonDown;
@@ -56,7 +56,7 @@ public class InputManager : MonoBehaviour
             var ray = Camera.main.ViewportPointToRay(new Vector3(.5f, .5f, 1f));
             Physics.Raycast(ray, out RaycastHit hit, 500f);
 
-            onMouseButtonDown?.Invoke(mScreenCenter, hit);
+            onMouseLeftButtonDown?.Invoke(mScreenCenter, hit);
         }
 
         if(Input.GetMouseButtonDown(2))

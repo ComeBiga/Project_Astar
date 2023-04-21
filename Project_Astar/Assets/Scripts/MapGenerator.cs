@@ -1,13 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 
 public class MapGenerator : MonoBehaviour
 {
-    private bool bPaintMode = true;
-
     public GroundTile prefGroundTile;
     public int width;
     public int height;
@@ -19,36 +18,29 @@ public class MapGenerator : MonoBehaviour
     public GroundTile.EType paintType = GroundTile.EType.Wall;
 
     private GroundTile[,] mGroundTiles;
-
-    private PriorityQueue<GroundTile> openedTiles;
-    private bool clicked = false;
-
     private GroundTile mStartTile = null;
     private GroundTile mGoalTile = null;
+    private PriorityQueue<GroundTile> openedTilePriorityQueue;
+
+    private bool clicked = false;
+    private bool bPaintMode = true;
 
     private const int COST_WALL = 1000;
     private const int COST_GROUND = 1;
-
-    public void ClearMap()
-    {
-        LoopMap((x, y) =>
-        {
-            mGroundTiles[x, y].Reset();
-        });
-
-        bPaintMode = true;
-    }
 
     private void Start()
     {
         InstantiateGroundTiles(width, height);
 
-        InputManager.Instance.onMouseButtonDown += (screenCenterPos, rayCastHit) =>
+        InputManager.Instance.onMouseLeftButtonDown += (screenCenterPos, rayCastHit) =>
         {
             if(rayCastHit.transform == null)
                 return;
 
             var targetGroundTile = rayCastHit.transform.GetComponent<GroundTile>();
+
+            if (bPaintMode)
+                PaintTile(targetGroundTile);
 
             //Debug.Log($"");
             Debug.Log($"=====================================");
@@ -58,20 +50,14 @@ public class MapGenerator : MonoBehaviour
             Debug.Log($"Heuristic:{targetGroundTile.heuristic}");
             Debug.Log($"Cost + Heuristic:{targetGroundTile.costSoFar + targetGroundTile.heuristic}");
 
-            if (bPaintMode)
-            {
-                PaintTile(targetGroundTile);
-            }
-
             clicked = true;
-
-            var x = targetGroundTile.Location.x;
-            var y = targetGroundTile.Location.y;
         };
 
         InputManager.Instance.OnKeyDown(KeyCode.C, () =>
         {
-            ClearMap();
+            ClearTiles();
+
+            bPaintMode = true;
         });
         
         InputManager.Instance.OnKeyDown(KeyCode.P, () =>
@@ -84,33 +70,33 @@ public class MapGenerator : MonoBehaviour
             if(mStartTile == null || mGoalTile == null)
                 return;
 
-            if(stepByStepMode)
+            if (stepByStepMode)
+            {
                 StartCoroutine(FindPathStepByStep());
+            }
             else
+            {
                 StartCoroutine(FindPath());
+            }
         });
     }
 
     private IEnumerator FindPath()
     {
         bPaintMode = false;
-        openedTiles = new PriorityQueue<GroundTile>(width * height);
+        openedTilePriorityQueue = new PriorityQueue<GroundTile>(width * height);
 
         GroundTile currentTile = mStartTile;
 
         currentTile.Open(null);
         OpenTiles(currentTile);
 
-        while(openedTiles.Count > 0)
+        while(openedTilePriorityQueue.Count > 0)
         {
-            currentTile = openedTiles.Dequeue();
+            currentTile = openedTilePriorityQueue.Dequeue();
 
             if(currentTile.Type == GroundTile.EType.Goal)
-            {
                 break;
-            }
-
-            currentTile.SetColor(GroundTile.EType.Wall);
 
             OpenTiles(currentTile);
 
@@ -119,67 +105,49 @@ public class MapGenerator : MonoBehaviour
             currentTile.Close();
         }
 
-        GroundTile previousTile = currentTile.PreviousTile;
-
-        while (previousTile != null)
-        {
-            previousTile.SetColor(GroundTile.EType.Goal);
-
-            previousTile = previousTile.PreviousTile;
-        }
+        DrawPath(currentTile);
     }
 
     private IEnumerator FindPathStepByStep()
     {
         bPaintMode = false;
-        openedTiles = new PriorityQueue<GroundTile>(width * height);
+        openedTilePriorityQueue = new PriorityQueue<GroundTile>(width * height);
 
         GroundTile currentTile = mStartTile;
 
         currentTile.Open(null);
         OpenTiles(currentTile);
 
-        while (openedTiles.Count > 0)
+        while (openedTilePriorityQueue.Count > 0)
         {
-            currentTile = openedTiles.Dequeue();
+            currentTile = openedTilePriorityQueue.Dequeue();
 
             yield return new WaitUntil(() => clicked);
             clicked = false;
 
             if (currentTile.Type == GroundTile.EType.Goal)
-            {
                 break;
-            }
-
-            currentTile.SetColor(GroundTile.EType.Wall);
 
             OpenTiles(currentTile);
 
             yield return new WaitUntil(() => clicked);
             clicked = false;
 
-            if (!stepByStepMode && findPathInterval > 0f)
+            if (findPathInterval > 0f)
                 yield return new WaitForSeconds(findPathInterval);
 
             currentTile.Close();
         }
 
-        GroundTile previousTile = currentTile.PreviousTile;
-
-        while (previousTile != null)
-        {
-            previousTile.SetColor(GroundTile.EType.Goal);
-
-            previousTile = previousTile.PreviousTile;
-        }
+        DrawPath(currentTile);
     }
 
     private void OpenTiles(GroundTile currentTile)
     {
+        currentTile.Select();
+
         var x = currentTile.Location.x;
         var y = currentTile.Location.y;
-
-        //GroundTile openTile;
 
         // Up
         OpenTile(x, y + 1, currentTile);
@@ -205,15 +173,16 @@ public class MapGenerator : MonoBehaviour
             return;
 
         targetTile.Open(previousTile);
-        targetTile.costSoFar = previousTile.costSoFar + GetCostSoFar(targetTile);
+        targetTile.costSoFar = previousTile.costSoFar + GetTileCost(targetTile.Type);
         targetTile.heuristic = GetHeuristic(mGoalTile, targetTile);
 
-        openedTiles.Enqueue(targetTile, targetTile.costSoFar + GetHeuristic(mGoalTile, targetTile));
+        int priority = targetTile.costSoFar + targetTile.heuristic;
+        openedTilePriorityQueue.Enqueue(targetTile, priority);
     }
 
-    private int GetCostSoFar(GroundTile openTile)
+    private int GetTileCost(GroundTile.EType openTileType)
     {
-        switch(openTile.Type)
+        switch(openTileType)
         {
             case GroundTile.EType.Wall:
                 return COST_WALL;
@@ -223,8 +192,21 @@ public class MapGenerator : MonoBehaviour
     }
 
     private int GetHeuristic(GroundTile goal, GroundTile target)
-    {
+    {  
         return Mathf.Abs(goal.Location.x - target.Location.x) + Mathf.Abs(goal.Location.y - target.Location.y);
+    }
+
+    private void DrawPath(GroundTile goalTile)
+    {
+        // 찾아낸 경로 표시
+        GroundTile previousTile = goalTile.PreviousTile;
+
+        while (previousTile != null)
+        {
+            previousTile.SetColor(GroundTile.EType.Goal);
+
+            previousTile = previousTile.PreviousTile;
+        }
     }
 
     private void InstantiateGroundTiles(int _width, int _height)
@@ -237,6 +219,14 @@ public class MapGenerator : MonoBehaviour
 
             var location = new Vector2Int(x, y);
             mGroundTiles[x, y].Init(location);
+        });
+    }
+
+    private void ClearTiles()
+    {
+        LoopMap((x, y) =>
+        {
+            mGroundTiles[x, y].Reset();
         });
     }
 
