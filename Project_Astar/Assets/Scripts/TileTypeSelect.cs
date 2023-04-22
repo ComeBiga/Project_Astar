@@ -3,14 +3,19 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class TileTypeSelect : MonoBehaviour
 {
+    public PathFindingSimulator pathFindingSimulator;
     public GameObject goTileTypeSelect;
     public GameObject goBackground;
     public TextMeshProUGUI txtPaintType;
-
-    public PathFindingSimulator pathFindingSimulator;
+    public RawImage imgPaintType;
+    public Texture texturePaintType_Start;
+    public Texture texturePaintType_Goal;
+    public Texture texturePaintType_Ground;
+    public Texture texturePaintType_Wall;
 
     public void OnPointerEnter(BaseEventData baseEventData)
     {
@@ -19,6 +24,7 @@ public class TileTypeSelect : MonoBehaviour
         var tileType = (GroundTile.EType)pointerEventData.pointerEnter.GetComponent<TileTypeSelectNode>()?.type;
         pathFindingSimulator.paintType = tileType;
         txtPaintType.text = tileType.ToString();
+        imgPaintType.texture = GetPaintTypeTexture(tileType);
     }
 
     public void OnPointerExit(BaseEventData baseEventData)
@@ -32,6 +38,7 @@ public class TileTypeSelect : MonoBehaviour
         goTileTypeSelect.SetActive(false);
         goBackground.SetActive(false);
         txtPaintType.text = pathFindingSimulator.paintType.ToString();
+        imgPaintType.texture = GetPaintTypeTexture(pathFindingSimulator.paintType);
 
         InputManager.Instance.onMouseMiddleButtonDown += (screenCenterPos, rayCastHit) =>
         {
@@ -55,11 +62,29 @@ public class TileTypeSelect : MonoBehaviour
         };
     }
 
-    private IEnumerator SelectTileType()
+    private Texture GetPaintTypeTexture(GroundTile.EType type)
     {
-        while(true)
+        Texture resultTexture;
+
+        switch(type)
         {
-            yield return null;
+            case GroundTile.EType.Start:
+                resultTexture = texturePaintType_Start;
+                break;
+            case GroundTile.EType.Goal:
+                resultTexture = texturePaintType_Goal;
+                break;
+            case GroundTile.EType.Ground:
+                resultTexture = texturePaintType_Ground;
+                break;
+            case GroundTile.EType.Wall:
+                resultTexture = texturePaintType_Wall;
+                break;
+            default:
+                resultTexture = null;
+                break;
         }
+
+        return resultTexture;
     }
 }
