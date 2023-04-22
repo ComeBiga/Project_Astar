@@ -9,16 +9,15 @@ public class TileTypeSelect : MonoBehaviour
     public GameObject goTileTypeSelect;
     public GameObject goBackground;
     public TextMeshProUGUI txtPaintType;
-    public TextMeshProUGUI[] txtTileType;
 
-    public MapGenerator mapGenerator;
+    public PathFindingSimulator pathFindingSimulator;
 
     public void OnPointerEnter(BaseEventData baseEventData)
     {
         var pointerEventData = baseEventData as PointerEventData;
 
         var tileType = (GroundTile.EType)pointerEventData.pointerEnter.GetComponent<TileTypeSelectNode>()?.type;
-        mapGenerator.paintType = tileType;
+        pathFindingSimulator.paintType = tileType;
         txtPaintType.text = tileType.ToString();
     }
 
@@ -32,7 +31,7 @@ public class TileTypeSelect : MonoBehaviour
     {
         goTileTypeSelect.SetActive(false);
         goBackground.SetActive(false);
-        txtPaintType.text = mapGenerator.paintType.ToString();
+        txtPaintType.text = pathFindingSimulator.paintType.ToString();
 
         InputManager.Instance.onMouseMiddleButtonDown += (screenCenterPos, rayCastHit) =>
         {

@@ -41,7 +41,6 @@ public class GroundTile : MonoBehaviour
     private GroundTile mPreviousTile;
 
     private MeshRenderer mMeshRenderer;
-    //private int mTileColorIndex = 0;
 
     public void Init(Vector2Int location, EType type = EType.Ground)
     {

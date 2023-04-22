@@ -22,13 +22,13 @@ public class InputManager : MonoBehaviour
 
     public void OnKeyDown(KeyCode keyCode, Action action)
     {
-        if(!mKeyDownActionDic.TryGetValue(keyCode, out Action root))
+        if(!mKeyDownActionDic.TryGetValue(keyCode, out Action keyDownAction))
         {
             mKeyDownActionDic.Add(keyCode, action);
             return;
         }
 
-        root += action;
+        keyDownAction += action;
     }
 
     private void Awake() 
